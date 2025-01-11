@@ -1,0 +1,45 @@
+# syntax=docker/dockerfile:1
+
+MAINTAINER damianx1337
+
+FROM docker.io/library/golang:1.23.4 AS builder
+
+ENV APP_NAME=pulse
+ENV TZ=Europe/Berlin
+
+COPY src/main.go /home/go/src/
+
+#COPY src/go.mod /home/go/src/go.mod
+#COPY src/go.sum /home/go/src/go.sum
+
+WORKDIR /home/go/src
+# comment out next line if go.mod exists
+RUN go mod init ${APP_NAME}
+RUN go mod tidy
+
+RUN go install golang.org/x/vuln/cmd/govulncheck@latest
+RUN govulncheck ./...
+
+RUN go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+RUN gocyclo .
+
+RUN GOOS=linux GOARCH=arm64 go build -o ${APP_NAME}_linux-arm64
+#RUN GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o ${APP_NAME}_linux-arm64
+
+
+# # # FINAL CT IMG # # #
+FROM docker.io/library/debian:bookworm-slim
+
+ENV APP_NAME=pulse
+ENV TZ=Europe/Berlin
+
+RUN apt-get update && apt-get dist-upgrade -y
+
+RUN useradd -m -d /home/noadm -s /bin/bash noadm
+COPY --from=builder /home/go/src/${APP_NAME}_linux-arm64 /home/noadm
+
+WORKDIR /home/noadm
+
+USER root
+
+CMD ["/bin/bash"]
