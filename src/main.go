@@ -27,6 +27,17 @@ func main() {
 		log.Fatalf("No certificates presented by the server")
 	}
 
+	// Extract the leaf certificate
+	leafCert := certs[0]
+
+	// Display expiration date of the leaf certificate
+	fmt.Printf("TLS Certificate is valid until: %s\n", leafCert.NotAfter)
+
+	// Check if the certificate is expired
+	if time.Now().After(leafCert.NotAfter) {
+		log.Fatalf("TLS Certificate has expired on: %s", leafCert.NotAfter)
+	}
+
 	// Load system root CAs
 	roots, err := x509.SystemCertPool()
 	if err != nil {
@@ -48,10 +59,9 @@ func main() {
 	}
 
 	// Verify the leaf certificate
-	if _, err := certs[0].Verify(opts); err != nil {
+	if _, err := leafCert.Verify(opts); err != nil {
 		log.Fatalf("Certificate verification failed: %v", err)
 	}
 
 	fmt.Println("Certificate verification successful!")
 }
-
