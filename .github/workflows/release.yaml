@@ -27,3 +27,21 @@ jobs:
       #  run: go build -v ./...
       #- name: Test with the Go CLI
       #  run: go test
+  security-scan:
+    name: Run Trivy Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -
+          sudo mv trivy /usr/local/bin/
+      - name: Run Trivy Repo Scan
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL .
+      - name: Upload Trivy Report
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-report
+          path: trivy-report.txt
