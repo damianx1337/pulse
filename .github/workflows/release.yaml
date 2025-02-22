@@ -9,24 +9,71 @@ jobs:
     strategy:
       matrix:
         go-version: [ '1.23.x' ]
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Go ${{ matrix.go-version }}
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
           #cache-dependency-path: src/go.mod
       # You can test your matrix by printing the current Go version
+
       - name: Display Go version
         run: go version
-      #- name: Install dependencies
+
+      - name: Install dependencies
+        run: go mod tidy
       #  run: go get .
+
       - name: Build Binary
-        run: cd src && go build -o pulse
+        run: |
+          cd src
+          mkdir -p dist
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/pulse-${{ matrix.goos }}-${{ matrix.goarch }}
+      #  run: cd src && go build -o pulse
       #  run: go build -v ./...
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          dist/: binaries
+
       #- name: Test with the Go CLI
       #  run: go test
+
+  release:
+    name: Create GitHub Release
+    needs: build # Ensure binaries are built before releasing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            Binaries for release ${{ github.ref_name }}:
+            - Built for multiple platforms.
+          artifacts: |
+            dist/myapp-linux-amd64
+            dist/myapp-linux-arm64
+            dist/myapp-darwin-amd64
+            dist/myapp-darwin-arm64
+
   security-scan:
     name: Run Trivy Security Scan
     runs-on: ubuntu-latest
