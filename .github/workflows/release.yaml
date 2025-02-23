@@ -70,9 +70,9 @@ jobs:
             - Built for multiple platforms.
           artifacts: |
             src/dist/pulse-linux-amd64
-            src/dist/pulse-linux-arm64
-            src/dist/pulse-darwin-amd64
-            src/dist/pulse-darwin-arm64
+            #src/dist/pulse-linux-arm64
+            #src/dist/pulse-darwin-amd64
+            #src/dist/pulse-darwin-arm64
 
   security-scan:
     name: Run Trivy Security Scan
