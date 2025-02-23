@@ -51,6 +51,9 @@ jobs:
     name: Create GitHub Release
     needs: build # Ensure binaries are built before releasing
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
