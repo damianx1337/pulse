@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binaries
-          dist/: binaries
+          path: dist/
 
       #- name: Test with the Go CLI
       #  run: go test
