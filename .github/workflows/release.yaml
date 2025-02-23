@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binaries
-          path: dist/
+          path: src/dist/
 
       #- name: Test with the Go CLI
       #  run: go test
@@ -69,10 +69,10 @@ jobs:
             Binaries for release ${{ github.ref_name }}:
             - Built for multiple platforms.
           artifacts: |
-            dist/myapp-linux-amd64
-            dist/myapp-linux-arm64
-            dist/myapp-darwin-amd64
-            dist/myapp-darwin-arm64
+            src/dist/pulse-linux-amd64
+            src/dist/pulse-linux-arm64
+            src/dist/pulse-darwin-amd64
+            src/dist/pulse-darwin-arm64
 
   security-scan:
     name: Run Trivy Security Scan
