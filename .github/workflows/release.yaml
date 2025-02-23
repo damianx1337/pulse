@@ -26,8 +26,8 @@ jobs:
       - name: Display Go version
         run: go version
 
-      - name: Install dependencies
-        run: go mod tidy
+      #- name: Install dependencies
+        #run: go mod tidy
       #  run: go get .
 
       - name: Build Binary
