@@ -35,8 +35,6 @@ jobs:
           cd src
           mkdir -p dist
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/pulse-${{ matrix.goos }}-${{ matrix.goarch }}
-          ls -la
-          ls -la dist
       #  run: cd src && go build -o pulse
       #  run: go build -v ./...
 
@@ -44,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binaries
-          path: src/dist/
+          path: src/dist/*
 
       #- name: Test with the Go CLI
       #  run: go test
@@ -63,6 +61,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: binaries
+          path: src/dist
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
@@ -74,7 +73,8 @@ jobs:
             Binaries for release ${{ github.ref_name }}:
             - Built for multiple platforms.
           artifacts: |
-            src/dist/pulse-linux-amd64
+            src/dist/*
+          artifactContentType: application/octet-stream
 
   security-scan:
     name: Run Trivy Security Scan
