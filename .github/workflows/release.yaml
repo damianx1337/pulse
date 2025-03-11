@@ -35,6 +35,8 @@ jobs:
           cd src
           mkdir -p dist
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/pulse-${{ matrix.goos }}-${{ matrix.goarch }}
+          ls -la
+          ls -la dist
       #  run: cd src && go build -o pulse
       #  run: go build -v ./...
 
