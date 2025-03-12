@@ -6,20 +6,20 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: [ '1.23.x' ]
-        goos: [ linux, windows, darwin ]
-        goarch: [ amd64, arm64 ]
+#    strategy:
+#      matrix:
+#        go-version: [ '1.23.x' ]
+#        goos: [ linux, windows, darwin ]
+#        goarch: [ amd64, arm64 ]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Go ${{ matrix.go-version }}
+      - name: Setup Go 1.23.7 #${{ matrix.go-version }}
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: '1.23.7' #${{ matrix.go-version }}
           #cache-dependency-path: src/go.mod
       # You can test your matrix by printing the current Go version
 
