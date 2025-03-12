@@ -1,67 +1,82 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
+	"context"
 	"fmt"
 	"log"
-	"net"
 	"time"
+
+	v1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func main() {
-	server := "example.com:443"
-
-	// Dial the server
-	conn, err := tls.DialWithDialer(&net.Dialer{Timeout: 5 * time.Second}, "tcp", server, &tls.Config{
-		InsecureSkipVerify: true, // Temporarily skip verification; we'll handle it manually.
-	})
+	// Load Kubernetes configuration from kubeconfig file
+	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
+		log.Fatalf("Failed to load kubeconfig: %v", err)
 	}
-	defer conn.Close()
-
-	// Retrieve the certificate chain
-	certs := conn.ConnectionState().PeerCertificates
-	if len(certs) == 0 {
-		log.Fatalf("No certificates presented by the server")
-	}
-
-	// Extract the leaf certificate
-	leafCert := certs[0]
-
-	// Display expiration date of the leaf certificate
-	fmt.Printf("TLS Certificate is valid until: %s\n", leafCert.NotAfter)
-
-	// Check if the certificate is expired
-	if time.Now().After(leafCert.NotAfter) {
-		log.Fatalf("TLS Certificate has expired on: %s", leafCert.NotAfter)
-	}
-
-	// Load system root CAs
-	roots, err := x509.SystemCertPool()
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Fatalf("Failed to load system root CAs: %v", err)
-	}
-	if roots == nil {
-		log.Fatal("No system root CAs available")
+		log.Fatalf("Failed to create Kubernetes client: %v", err)
 	}
 
-	// Create a verification options structure
-	opts := x509.VerifyOptions{
-		Roots:         roots,
-		Intermediates: x509.NewCertPool(),
+	namespace := "default"
+	image := "nginx:latest" // Change this to your desired image
+	jobName := "image-pull-test"
+
+	// Define job spec
+	job := &v1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: jobName,
+		},
+		Spec: v1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "test-container",
+							Image: image,
+							Command: []string{"sleep", "10"}, // Short-running container
+						},
+					},
+					RestartPolicy: corev1.RestartPolicyNever,
+				},
+			},
+		},
 	}
 
-	// Add all but the leaf certificate to intermediates pool
-	for _, cert := range certs[1:] {
-		opts.Intermediates.AddCert(cert)
+	// Record start time
+	startTime := time.Now()
+
+	// Create job
+	_, err = clientset.BatchV1().Jobs(namespace).Create(context.TODO(), job, metav1.CreateOptions{})
+	if err != nil {
+		log.Fatalf("Failed to create job: %v", err)
 	}
 
-	// Verify the leaf certificate
-	if _, err := leafCert.Verify(opts); err != nil {
-		log.Fatalf("Certificate verification failed: %v", err)
-	}
+	// Wait for pod to start running
+	for {
+		pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+			LabelSelector: "job-name=" + jobName,
+		})
+		if err != nil {
+			log.Fatalf("Failed to list pods: %v", err)
+		}
 
-	fmt.Println("Certificate verification successful!")
+		for _, pod := range pods.Items {
+			for _, status := range pod.Status.ContainerStatuses {
+				if status.State.Running != nil || status.State.Terminated != nil {
+					duration := time.Since(startTime)
+					fmt.Printf("Image pull time: %v\n", duration)
+					return
+				}
+			}
+		}
+		time.Sleep(1 * time.Second)
+	}
 }
+
