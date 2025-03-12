@@ -40,7 +40,7 @@ func main() {
 						{
 							Name:  "test-container",
 							Image: image,
-							Command: []string{"sleep", "10"}, // Short-running container
+							Command: []string{"sh", "-c", "echo Start; sleep 10"}, // Simulate startup
 						},
 					},
 					RestartPolicy: corev1.RestartPolicyNever,
@@ -58,6 +58,8 @@ func main() {
 		log.Fatalf("Failed to create job: %v", err)
 	}
 
+	var imagePullTime, startupTime time.Duration
+
 	// Wait for pod to start running
 	for {
 		pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
@@ -69,9 +71,13 @@ func main() {
 
 		for _, pod := range pods.Items {
 			for _, status := range pod.Status.ContainerStatuses {
-				if status.State.Running != nil || status.State.Terminated != nil {
-					duration := time.Since(startTime)
-					fmt.Printf("Image pull time: %v\n", duration)
+				if status.State.Waiting == nil && status.State.Running != nil {
+					imagePullTime = time.Since(startTime)
+					fmt.Printf("Image pull time: %v\n", imagePullTime)
+				}
+				if status.State.Terminated != nil {
+					startupTime = time.Since(startTime)
+					fmt.Printf("Application startup time: %v\n", startupTime)
 					return
 				}
 			}
