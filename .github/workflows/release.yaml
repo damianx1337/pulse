@@ -54,6 +54,10 @@ jobs:
     permissions:
       contents: write
       actions: write
+    strategy:
+      matrix:
+        goos: [ linux, windows, darwin ]
+        goarch: [ amd64, arm64 ]
     steps:
 #      - name: Checkout code
 #        uses: actions/checkout@v3
