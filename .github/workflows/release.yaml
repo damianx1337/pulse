@@ -34,14 +34,17 @@ jobs:
         run: |
           cd src
           mkdir -p dist
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/pulse-${{ matrix.goos }}-${{ matrix.goarch }}
+          GOOS=windows GOARCH=amd64 go build -o dist/pulse-windows-amd64
+          GOOS=linux GOARCH=amd64 go build -o dist/pulse-linux-amd64
+          GOOS=darwin GOARCH=arm64 go build -o dist/pulse-darwin-arm64
+#          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/pulse-${{ matrix.goos }}-${{ matrix.goarch }}
       #  run: cd src && go build -o pulse
       #  run: go build -v ./...
 
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-${{ github.run_id }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          name: binaries-${{ github.run_id }}
           path: src/dist/*
 
       #- name: Test with the Go CLI
@@ -54,17 +57,13 @@ jobs:
     permissions:
       contents: write
       actions: write
-    strategy:
-      matrix:
-        goos: [ linux, windows, darwin ]
-        goarch: [ amd64, arm64 ]
     steps:
 #      - name: Checkout code
 #        uses: actions/checkout@v3
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: binaries-${{ github.run_id }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          name: binaries-${{ github.run_id }}
           path: src/dist
 
       - name: Create GitHub Release
