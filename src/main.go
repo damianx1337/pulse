@@ -10,14 +10,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 )
 
 func main() {
-	// Load Kubernetes configuration from kubeconfig file
-	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
+	// Create in-cluster Kubernetes client
+	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Fatalf("Failed to load kubeconfig: %v", err)
+		log.Fatalf("Failed to create in-cluster config: %v", err)
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
